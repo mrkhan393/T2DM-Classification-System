@@ -40,18 +40,21 @@ def load_and_preprocess_data(csv_path, features, target_col='final_diabetes'):
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-
-    adasyn = ADASYN(random_state=42)
-    X_res, y_res = adasyn.fit_resample(X_scaled, y)
-
-    # Reshape for LSTM: [samples, timesteps, features]
-    X_res = X_res.reshape(X_res.shape[0], X_res.shape[1], 1)
-
+    
+    # Reshape NOT yet (important: ADASYN needs 2D)
     X_train, X_test, y_train, y_test = train_test_split(
-        X_res, y_res, test_size=0.2, stratify=y_res, random_state=42
+        X_scaled, y, test_size=0.2, stratify=y, random_state=42
     )
+    
+    adasyn = ADASYN(random_state=42)
+    X_train, y_train = adasyn.fit_resample(X_train, y_train)
+    
+    # Now reshape for LSTM
+    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+    
     return X_train, X_test, y_train, y_test
-
+    
 def split_clients_non_iid(X, y, num_clients=10, min_pos_ratio=0.3, max_pos_ratio=0.7, seed=42):
     rng = np.random.default_rng(seed)
     
